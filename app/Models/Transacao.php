@@ -10,7 +10,7 @@ class Transacao extends Model
 
     protected $primaryKey = 'id';
 
-    protected $incrementing = true;
+    public $incrementing = true;
 
     protected $keyType = 'int';
 
