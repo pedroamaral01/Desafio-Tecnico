@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CriaContaRequest;
 use Illuminate\Http\Request;
 
 use App\Repositories\ContaRepository;
@@ -25,7 +26,7 @@ class ContaController extends Controller
         }
     }
 
-    public function store(Request $request)
+    public function store(CriaContaRequest $request)
     {
         try {
             $conta = $this->repository->store($request->all());
