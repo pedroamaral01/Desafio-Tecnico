@@ -17,7 +17,7 @@ class SaldoContaRepository
     {
         return $this->model::where('contas_id', $contas_id)
             ->where('moeda', $moeda)
-            ->firstOrFail();
+            ->first();
     }
 
     public function store(array $data)

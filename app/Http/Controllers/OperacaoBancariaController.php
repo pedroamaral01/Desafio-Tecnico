@@ -23,28 +23,39 @@ class OperacaoBancariaController extends Controller
     {
         try {
             $saldoMoeda = $this->repositorySaldoConta->buscaMoedaEmConta($request->contas_id, $request->moeda);
-            $saldoMoeda->valor += $request->valor;
-            $saldoAtualizado = $this->repositorySaldoConta->update(data: [
-                'contas_id' => $saldoMoeda->contas_id,
-                'moeda' => $saldoMoeda->moeda,
-                'valor' => $saldoMoeda->valor
-            ]);
-        } catch (ModelNotFoundException $e) {
-            $saldoAtualizado = $this->repositorySaldoConta->store(data: $request->all());
-        }
-        try {
+            if ($saldoMoeda === null) {
+                $saldoAtualizado = $this->repositorySaldoConta->store(data: $request->all());
+            } else {
+                $saldoMoeda->valor += $request->valor;
+                $saldoAtualizado = $this->repositorySaldoConta->update(data: [
+                    'contas_id' => $saldoMoeda->contas_id,
+                    'moeda' => $saldoMoeda->moeda,
+                    'valor' => $saldoMoeda->valor
+                ]);
+            }
+
             $transacao = $this->repositoryTransacao->store($request->all(), 'deposito');
+
+            $responseData = $this->respostaTransacao(
+                $transacao,
+                $saldoAtualizado,
+                'Depósito realizado com sucesso'
+            );
+            return response()->json($responseData, 200);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Erro ao realizar a transação', 'message' => $e->getMessage()], 500);
         }
+    }
 
-        $responseData = [
-            'mensagem' => 'Depósito realizado com sucesso',
+    public function respostaTransacao($transacao, $saldoAtualizado, $mensagem)
+    {
+        return [
+            'mensagem' => $mensagem,
             'transacao' => [
                 'valor' => $transacao->valor,
                 'moeda' => $transacao->moeda,
                 'tipo_transacao' => $transacao->tipo_transacao,
-                'created_at' => $transacao->created_at,
+                'data' => $transacao->created_at,
             ],
             'saldo após transação' => [
                 'contas_id' => $saldoAtualizado->contas_id,
@@ -52,6 +63,5 @@ class OperacaoBancariaController extends Controller
                 'valor' => $saldoAtualizado->valor,
             ],
         ];
-        return response()->json($responseData, 200);
     }
 }
