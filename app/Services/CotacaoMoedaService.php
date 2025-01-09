@@ -63,6 +63,9 @@ class CotacaoMoedaService
 
     public function realizaCotacao($moeda)
     {
+        $this->cotacaoCompra = null;
+        $this->cotacaoVenda = null;
+
         $dataCotacao = date(format: 'Y-m-d');
 
         $this->setMoedaParametroUrl($moeda);
