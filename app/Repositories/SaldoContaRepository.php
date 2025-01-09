@@ -40,4 +40,9 @@ class SaldoContaRepository
     {
         return $this->model::where('contas_id', $contas_id)->get();
     }
+
+    public function deleteAllByAccount($contas_id)
+    {
+        $this->model::where('contas_id', $contas_id)->delete();
+    }
 }

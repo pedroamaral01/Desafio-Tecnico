@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Collection;
 
 use App\Repositories\SaldoContaRepository;
 use App\Repositories\TransacaoRepository;
@@ -28,20 +29,13 @@ class OperacaoBancariaController extends Controller
 
     public function saldo($contas_id, $moeda = null)
     {
-        $somaSaldoConvertido = 0;
         try {
-            $saldoNaConta = $this->repositorySaldoConta->getAllByAccount($contas_id);
+            $saldoPorMoeda = $this->repositorySaldoConta->getAllByAccount($contas_id);
 
             if ($moeda == null) {
-                return response()->json($saldoNaConta);
+                return response()->json($saldoPorMoeda);
             } else {
-                foreach ($saldoNaConta as $saldo) {
-                    $somaSaldoConvertido += $this->realizaConversaoDeMoeda(
-                        $saldo->valor,
-                        $saldo->moeda,
-                        $moeda
-                    );
-                }
+                $somaSaldoConvertido = $this->somaMoedasConvertidas($saldoPorMoeda, $moeda);
 
                 return response()->json([
                     'message' => 'Saldo Total da conta na moeda:',
@@ -50,7 +44,7 @@ class OperacaoBancariaController extends Controller
                 ]);
             }
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Erro ao realizar a consiulta do saldo', 'message' => $e->getMessage()], 500);
+            return response()->json(['error' => 'Erro ao realizar a consulta do saldo', 'message' => $e->getMessage()], 500);
         }
     }
 
@@ -88,6 +82,66 @@ class OperacaoBancariaController extends Controller
         }
     }
 
+    public function saque(Request $request)
+    {
+        try {
+            $saldoMoeda = $this->repositorySaldoConta->buscaMoedaEmConta($request->contas_id, $request->moeda);
+            $novoSaldo = request()->all();
+
+            if ($saldoMoeda === null || $saldoMoeda->valor < $request->valor) {
+                $saldoPorMoeda = $this->repositorySaldoConta->getAllByAccount($request->contas_id);
+                $somaSaldoConvertido = $this->somaMoedasConvertidas($saldoPorMoeda, $request->moeda);
+
+                if ($somaSaldoConvertido < $request->valor && $somaSaldoConvertido != null) {
+                    $responseData = $this->respostaSaldoInsuficiente($request);
+                    return response()->json($responseData, 400);
+                } else {
+
+                    $novoSaldo['valor'] = $somaSaldoConvertido - $request->valor;
+
+                    $this->repositorySaldoConta->deleteAllByAccount($request->contas_id);
+
+                    $novoSaldo = $this->repositorySaldoConta->store(data: $novoSaldo);
+                }
+            } else {
+                $novoSaldo['valor'] = $saldoMoeda->valor - $request->valor;
+                $novoSaldo = $this->repositorySaldoConta->update(data: $novoSaldo);
+            }
+
+            $transacao = $this->repositoryTransacao->store($request->all(), 'saque');
+
+            $responseData = $this->respostaTransacao(
+                $transacao,
+                $novoSaldo,
+                'Saque realizado com sucesso'
+            );
+            return response()->json($responseData, 200);
+
+        } catch (\Exception $e) {
+            return response()->json(
+                [
+                    'error' => 'Erro ao realizar a transação',
+                    'message' => $e->getMessage()
+                ],
+                500
+            );
+        }
+    }
+
+    public function somaMoedasConvertidas(Collection $saldoPorMoeda, $moeda)
+    {
+        $somaSaldoConvertido = 0;
+
+        foreach ($saldoPorMoeda as $saldo) {
+            $somaSaldoConvertido += $this->realizaConversaoDeMoeda(
+                $saldo->valor,
+                $saldo->moeda,
+                $moeda,
+            );
+        }
+        return $somaSaldoConvertido;
+    }
+
     public function realizaConversaoDeMoeda($saldoMoedaBase, $moedaBase, $moedaObjetivo)
     {
         try {
@@ -104,6 +158,7 @@ class OperacaoBancariaController extends Controller
             }
             $this->cotacaoMoedaService->realizaCotacao($moedaObjetivo);
             $saldoMoedaBase /= $this->cotacaoMoedaService->getCotacaoVenda();
+
             return $saldoMoedaBase;
         } catch (\Exception $e) {
             return response()->json(
@@ -132,5 +187,16 @@ class OperacaoBancariaController extends Controller
                 'valor' => $saldoAtualizado->valor,
             ],
         ];
+    }
+
+    public function respostaSaldoInsuficiente($request)
+    {
+        return response()->json(
+            [
+                'error' => 'Saldo insuficiente para realizar a transação',
+                'message' => 'Tente escolher um valor menor para saque: '
+            ],
+            400
+        );
     }
 }
