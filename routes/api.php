@@ -12,6 +12,7 @@ Route::prefix('/contas')->group(function () {
 });
 
 Route::prefix('/operacoes-bancarias')->group(function () {
-    Route::put('/deposito', [OperacaoBancariaController::class, 'deposito'])->name('operacao.deposito');
     Route::get('/', [OperacaoBancariaController::class, 'index'])->name('operacao.index');
+    Route::get('/saldo/{contas_id}/{moeda?}', [OperacaoBancariaController::class, 'saldo'])->name('operacao.saldo');
+    Route::put('/deposito', [OperacaoBancariaController::class, 'deposito'])->name('operacao.deposito');
 });

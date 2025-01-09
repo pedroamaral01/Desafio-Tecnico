@@ -35,4 +35,9 @@ class SaldoContaRepository
         $saldoConta->save();
         return $saldoConta;
     }
+
+    public function getAllByAccount($contas_id)
+    {
+        return $this->model::where('contas_id', $contas_id)->get();
+    }
 }
