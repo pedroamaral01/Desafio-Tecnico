@@ -22,7 +22,7 @@ class CriaContaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nome_titular' => 'required|string|alpha:ascii',
+            'nome_titular' => 'required|string|regex:/^[\pL\s]+$/u',
             'cpf' => 'required|string|size:11',
         ];
     }
