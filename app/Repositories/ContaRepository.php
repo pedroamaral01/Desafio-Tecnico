@@ -4,7 +4,7 @@ namespace App\Repositories;
 
 use App\Models\Conta;
 
-class ContaRepository
+class ContaRepository implements RepositoryInterface
 {
     protected $model;
     public function __construct()

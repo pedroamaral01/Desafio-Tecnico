@@ -41,6 +41,7 @@ class TransacaoRequest extends FormRequest
             'valor.numeric' => 'O campo Valor deve ser um número.',
             'valor.regex' => 'O campo Valor deve estar no formato correto (até 8 dígitos antes do ponto e até 2 casas decimais).',
             'valor.min' => 'O campo Valor deve ser maior ou igual a 0.01.',
+
             // Mensagens para 'moeda'
             'moeda.required' => 'O campo Moeda é obrigatório.',
             'moeda.string' => 'O campo Moeda deve ser um texto.',

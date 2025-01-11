@@ -6,6 +6,7 @@ use App\Http\Requests\CriaContaRequest;
 use Illuminate\Http\Request;
 
 use App\Repositories\ContaRepository;
+use App\Repositories\RepositoryInterface;
 
 class ContaController extends Controller
 {
@@ -13,7 +14,7 @@ class ContaController extends Controller
 
     public function __construct()
     {
-        $this->repository = new ContaRepository();
+        $this->repository = app(RepositoryInterface::class . '.conta');
     }
 
     public function index()

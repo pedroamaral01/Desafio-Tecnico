@@ -4,7 +4,7 @@ namespace App\Repositories;
 
 use App\Models\Transacao;
 
-class TransacaoRepository
+class TransacaoRepository implements RepositoryInterface
 {
     protected $model;
 

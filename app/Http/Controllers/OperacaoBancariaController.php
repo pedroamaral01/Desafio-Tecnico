@@ -2,33 +2,37 @@
 
 namespace App\Http\Controllers;
 
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
 
-use App\Repositories\SaldoContaRepository;
-use App\Repositories\TransacaoRepository;
-
 use App\Services\CotacaoMoedaService;
+use App\Repositories\RepositoryInterface;
+use App\Http\Requests\TransacaoRequest;
+use App\Http\Requests\ContaIdRequest;
+use App\Http\Requests\MoedaRequest;
 
 class OperacaoBancariaController extends Controller
 {
     protected $repositorySaldoConta;
-
     protected $repositoryTransacao;
-
     protected $cotacaoMoedaService;
 
+    // Injeção de dependência no construtor
     public function __construct()
     {
-        $this->repositorySaldoConta = new SaldoContaRepository();
-        $this->repositoryTransacao = new TransacaoRepository();
+        $this->repositorySaldoConta = app(RepositoryInterface::class . '.saldo');
+        $this->repositoryTransacao = app(RepositoryInterface::class . '.transacao');
         $this->cotacaoMoedaService = new CotacaoMoedaService();
     }
 
-    public function saldo($contas_id, $moeda = null)
+    public function saldo(ContaIdRequest $contaIdRequest, MoedaRequest $moedaRequest)
     {
+        $contas_id = $contaIdRequest->route('contas_id'); // Captura o parâmetro da rota
+        $moeda = $moedaRequest->route('moeda'); // Captura o parâmetro da rota (se fornecido)
+
         try {
             $saldoPorMoeda = $this->repositorySaldoConta->getAllByAccount($contas_id);
 
@@ -48,7 +52,7 @@ class OperacaoBancariaController extends Controller
         }
     }
 
-    public function deposito(Request $request)
+    public function deposito(TransacaoRequest $request)
     {
         try {
             $saldoMoeda = $this->repositorySaldoConta->buscaMoedaEmConta($request->contas_id, $request->moeda);
@@ -82,7 +86,7 @@ class OperacaoBancariaController extends Controller
         }
     }
 
-    public function saque(Request $request)
+    public function saque(TransacaoRequest $request)
     {
         try {
             $saldoMoeda = $this->repositorySaldoConta->buscaMoedaEmConta($request->contas_id, $request->moeda);
