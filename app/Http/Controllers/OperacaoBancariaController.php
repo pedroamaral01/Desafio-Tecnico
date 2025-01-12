@@ -9,7 +9,10 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
 
 use App\Services\CotacaoMoedaService;
+use App\Services\ListaMoedasDisponiveisService;
+
 use App\Repositories\RepositoryInterface;
+
 use App\Http\Requests\TransacaoRequest;
 use App\Http\Requests\ContaIdRequest;
 use App\Http\Requests\MoedaRequest;
@@ -18,7 +21,9 @@ class OperacaoBancariaController extends Controller
 {
     protected $repositorySaldoConta;
     protected $repositoryTransacao;
+
     protected $cotacaoMoedaService;
+    protected $listaMoedasDisponiveisService;
 
     // Injeção de dependência no construtor
     public function __construct()
@@ -26,6 +31,7 @@ class OperacaoBancariaController extends Controller
         $this->repositorySaldoConta = app(RepositoryInterface::class . '.saldo');
         $this->repositoryTransacao = app(RepositoryInterface::class . '.transacao');
         $this->cotacaoMoedaService = new CotacaoMoedaService();
+        $this->listaMoedasDisponiveisService = new ListaMoedasDisponiveisService();
     }
 
     public function saldo(ContaIdRequest $contaIdRequest, MoedaRequest $moedaRequest)
@@ -34,6 +40,11 @@ class OperacaoBancariaController extends Controller
         $moeda = $moedaRequest->route('moeda'); // Captura o parâmetro da rota (se fornecido)
 
         try {
+
+            if ($moeda != null) {
+                $this->listaMoedasDisponiveisService->verificaMoedaDisponivel($moeda);
+            }
+
             $saldoPorMoeda = $this->repositorySaldoConta->getAllByAccount($contas_id);
 
             if ($moeda == null) {
@@ -55,6 +66,10 @@ class OperacaoBancariaController extends Controller
     public function deposito(TransacaoRequest $request)
     {
         try {
+
+            $this->listaMoedasDisponiveisService->verificaMoedaDisponivel($request->moeda);
+
+
             $saldoMoeda = $this->repositorySaldoConta->buscaMoedaEmConta($request->contas_id, $request->moeda);
             if ($saldoMoeda === null) {
                 $saldoAtualizado = $this->repositorySaldoConta->store(data: $request->all());
@@ -89,6 +104,8 @@ class OperacaoBancariaController extends Controller
     public function saque(TransacaoRequest $request)
     {
         try {
+            $this->listaMoedasDisponiveisService->verificaMoedaDisponivel($request->moeda);
+
             $saldoMoeda = $this->repositorySaldoConta->buscaMoedaEmConta($request->contas_id, $request->moeda);
             $novoSaldo = request()->all();
 
