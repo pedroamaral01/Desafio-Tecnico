@@ -1,66 +1,135 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Desafio Técnico - Guia de Instalação, Configuração e Uso
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Este guia descreve os passos necessários para instalar, configurar e executar o projeto disponível no repositório [Desafio-Tecnico](https://github.com/pedroamaral01/Desafio-Tecnico).
 
-## About Laravel
+## Pré-requisitos
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Docker** e **Docker Compose** instalados.
+- Cliente de banco de dados, como **DBeaver** ou outro similar.
+- Testar as rotas com **Insomnia** ou outro similar.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Instalação e Configuração
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### 1. Clone o repositório do projeto:
 
-## Learning Laravel
+   ```bash
+   git clone https://github.com/pedroamaral01/Desafio-Tecnico.git
+   cd Desafio-Tecnico
+   ```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 2. Copie o conteúdo de `.env.example` e cole em `.env`:
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### 3. Suba o ambiente Docker usando o Laravel Sail:
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+   ```bash
+   ./vendor/bin/sail up
+   ```
 
-## Laravel Sponsors
+### 4. Crie um alias para facilitar o uso do Sail:
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+   ```bash
+   alias sail='[ -f sail ] && bash sail || bash vendor/bin/sail'
+   ```
 
-### Premium Partners
+### 5. Execute as migrações para criar as tabelas no banco de dados:
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+   ```bash
+   sail artisan migrate
+   ```
 
-## Contributing
+### 6. Configuração do Banco de Dados: Para acessar o banco de dados, configure um cliente como o DBeaver, utilizando as credenciais definidas no arquivo `.env`.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+   Importante: caso utilize o DBeaver, edite as configurações no driver MySQL ao conectar:
+   - `"useSSL"` ⇒ `false`
+   - `"allowPublicKeyRetrieval"` ⇒ `true`
 
-## Code of Conduct
+### 7. Configuração dos Headers para Testar Erros de Requests:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+   Para testar os erros de requests das rotas, é necessário adicionar a opção `Accept: application/json` no header de cada rota. Isso garante que a API retorne as respostas no formato JSON.
 
-## Security Vulnerabilities
+   ![Exemplo Headers](image.png)
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Rotas da API
 
-## License
+1. **Criar Conta**
+   - Método: POST
+   - Endpoint: `http://localhost/api/contas`
+   - Parâmetros de Exemplo:
+     ```json
+     {
+         "nome_titular": "exemplo", 
+         "cpf": "11111111111" 
+     }
+     ```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+2. **Realizar Depósito**
+   - Método: PUT
+   - Endpoint: `http://localhost/api/operacoes-bancarias/deposito`
+   - Parâmetros de Exemplo:
+     ```json
+     {
+       "contas_id": "1", 
+       "valor": "100.00", 
+       "moeda": "EUR"
+     }
+     ```
+
+3. **Consultar Saldo**
+   - Método: GET
+   - Endpoints Disponíveis:
+     - Para visualizar o saldo por moeda:
+       ```bash
+       http://localhost/api/operacoes-bancarias/saldo/{contas_id}
+       ```
+       Exemplo:
+       ```bash
+       http://localhost/api/operacoes-bancarias/saldo/1
+       ```
+     - Para visualizar o saldo convertido para uma moeda específica:
+       ```bash
+       http://localhost/api/operacoes-bancarias/saldo/{contas_id}/{moeda}
+       ```
+       Exemplo:
+       ```bash
+       http://localhost/api/operacoes-bancarias/saldo/1/BRL
+       ```
+
+4. **Realizar Saque**
+   - Método: PUT
+   - Endpoint: `http://localhost/api/operacoes-bancarias/saque`
+   - Parâmetros de Exemplo:
+     ```json
+     {
+       "contas_id": "4",
+       "valor": "1.40",
+       "moeda": "CAD"
+     }
+     ```
+
+## Testes
+
+### 1. Execute as migrações para o banco de dados de teste:
+
+   ```bash
+   ./vendor/bin/sail artisan migrate --env=testing
+   ```
+
+### 2. Execute os testes:
+
+   ```bash
+   ./vendor/bin/sail artisan test
+   ```
+
+### 3. Executando testes específicos:
+
+   Em cada arquivo presente na pasta `tests`, há comandos para testar o arquivo completo ou cada função separadamente. Por exemplo, para testar o arquivo `ContaIdRequestTest` ou uma função específica dentro dele, você pode usar os seguintes comandos:
+
+   - Para testar o arquivo completo:
+     ```bash
+     sail artisan test --filter=ContaIdRequestTest
+     ```
+
+   - Para testar uma função específica:
+     ```bash
+     sail artisan test --filter=ContaIdRequestTest::test_contas_id_obrigatorio_null_falha
+     ```

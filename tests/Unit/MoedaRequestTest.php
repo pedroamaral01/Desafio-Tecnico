@@ -4,7 +4,7 @@ namespace Tests\Unit;
 
 use App\Http\Requests\MoedaRequest;
 use Illuminate\Support\Facades\Validator;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 # sail artisan test --filter=MoedaRequestTest
 class MoedaRequestTest extends TestCase
