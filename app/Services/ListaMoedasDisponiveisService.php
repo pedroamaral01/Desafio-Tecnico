@@ -10,6 +10,10 @@ class ListaMoedasDisponiveisService
 
     public function verificaMoedaDisponivel(string $moeda)
     {
+        if (strtoupper($moeda) === 'BRL') {
+            return true;
+        }
+
         $response = Http::get(self::URL);
 
         if ($response->failed()) {

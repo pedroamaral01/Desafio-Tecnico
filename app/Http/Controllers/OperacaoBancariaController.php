@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -11,7 +10,9 @@ use Illuminate\Support\Collection;
 use App\Services\CotacaoMoedaService;
 use App\Services\ListaMoedasDisponiveisService;
 
-use App\Repositories\RepositoryInterface;
+use App\Repositories\SaldoContaRepositoryInterface;
+use App\Repositories\TransacaoRepositoryInterface;
+use App\Repositories\ContaRepositoryInterface;
 
 use App\Http\Requests\TransacaoRequest;
 use App\Http\Requests\ContaIdRequest;
@@ -19,33 +20,49 @@ use App\Http\Requests\MoedaRequest;
 
 class OperacaoBancariaController extends Controller
 {
-    protected $repositorySaldoConta;
-    protected $repositoryTransacao;
+    protected $saldoContaRepository;
+
+    protected $transacaoRepository;
+
+    protected $contaRepository;
 
     protected $cotacaoMoedaService;
+
     protected $listaMoedasDisponiveisService;
 
-    // Injeção de dependência no construtor
-    public function __construct()
-    {
-        $this->repositorySaldoConta = app(RepositoryInterface::class . '.saldo');
-        $this->repositoryTransacao = app(RepositoryInterface::class . '.transacao');
-        $this->cotacaoMoedaService = new CotacaoMoedaService();
-        $this->listaMoedasDisponiveisService = new ListaMoedasDisponiveisService();
+    public function __construct(
+        SaldoContaRepositoryInterface $saldoContaRepository,
+        TransacaoRepositoryInterface $transacaoRepository,
+        ContaRepositoryInterface $contaRepository,
+        CotacaoMoedaService $cotacaoMoedaService,
+        ListaMoedasDisponiveisService $listaMoedasDisponiveisService
+    ) {
+        $this->saldoContaRepository = $saldoContaRepository;
+        $this->transacaoRepository = $transacaoRepository;
+        $this->contaRepository = $contaRepository;
+        $this->cotacaoMoedaService = $cotacaoMoedaService;
+        $this->listaMoedasDisponiveisService = $listaMoedasDisponiveisService;
     }
 
     public function saldo(ContaIdRequest $contaIdRequest, MoedaRequest $moedaRequest)
     {
-        $contas_id = $contaIdRequest->route('contas_id'); // Captura o parâmetro da rota
-        $moeda = $moedaRequest->route('moeda'); // Captura o parâmetro da rota (se fornecido)
+        $contas_id = $contaIdRequest->route('contas_id');
+        $moeda = $moedaRequest->route('moeda');
 
         try {
+            if ($this->contaRepository->find($contas_id) === null) {
+                return response()->json(['error' => 'Conta não encontrada'], 404);
+            }
 
             if ($moeda != null) {
                 $this->listaMoedasDisponiveisService->verificaMoedaDisponivel($moeda);
             }
 
-            $saldoPorMoeda = $this->repositorySaldoConta->getAllByAccount($contas_id);
+            $saldoPorMoeda = $this->saldoContaRepository->getAllByAccount($contas_id);
+
+            if ($saldoPorMoeda->isEmpty()) {
+                return response()->json(['message' => 'Essa conta não possui saldo'], 404);
+            }
 
             if ($moeda == null) {
                 return response()->json($saldoPorMoeda);
@@ -66,23 +83,26 @@ class OperacaoBancariaController extends Controller
     public function deposito(TransacaoRequest $request)
     {
         try {
+            if ($this->contaRepository->find($request->contas_id) === null) {
+                return response()->json(['error' => 'Conta não encontrada'], 404);
+            }
 
             $this->listaMoedasDisponiveisService->verificaMoedaDisponivel($request->moeda);
 
 
-            $saldoMoeda = $this->repositorySaldoConta->buscaMoedaEmConta($request->contas_id, $request->moeda);
+            $saldoMoeda = $this->saldoContaRepository->buscaMoedaEmConta($request->contas_id, $request->moeda);
             if ($saldoMoeda === null) {
-                $saldoAtualizado = $this->repositorySaldoConta->store(data: $request->all());
+                $saldoAtualizado = $this->saldoContaRepository->store(data: $request->all());
             } else {
                 $saldoMoeda->valor += $request->valor;
-                $saldoAtualizado = $this->repositorySaldoConta->update(data: [
+                $saldoAtualizado = $this->saldoContaRepository->update(data: [
                     'contas_id' => $saldoMoeda->contas_id,
                     'moeda' => $saldoMoeda->moeda,
                     'valor' => $saldoMoeda->valor
                 ]);
             }
 
-            $transacao = $this->repositoryTransacao->store($request->all(), 'deposito');
+            $transacao = $this->transacaoRepository->store($request->all(), 'deposito');
 
             $responseData = $this->respostaTransacao(
                 $transacao,
@@ -106,11 +126,11 @@ class OperacaoBancariaController extends Controller
         try {
             $this->listaMoedasDisponiveisService->verificaMoedaDisponivel($request->moeda);
 
-            $saldoMoeda = $this->repositorySaldoConta->buscaMoedaEmConta($request->contas_id, $request->moeda);
+            $saldoMoeda = $this->saldoContaRepository->buscaMoedaEmConta($request->contas_id, $request->moeda);
             $novoSaldo = request()->all();
 
             if ($saldoMoeda === null || $saldoMoeda->valor < $request->valor) {
-                $saldoPorMoeda = $this->repositorySaldoConta->getAllByAccount($request->contas_id);
+                $saldoPorMoeda = $this->saldoContaRepository->getAllByAccount($request->contas_id);
                 $somaSaldoConvertido = $this->somaMoedasConvertidas($saldoPorMoeda, $request->moeda);
 
                 if ($somaSaldoConvertido < $request->valor && $somaSaldoConvertido != null) {
@@ -120,16 +140,16 @@ class OperacaoBancariaController extends Controller
 
                     $novoSaldo['valor'] = $somaSaldoConvertido - $request->valor;
 
-                    $this->repositorySaldoConta->deleteAllByAccount($request->contas_id);
+                    $this->saldoContaRepository->deleteAllByAccount($request->contas_id);
 
-                    $novoSaldo = $this->repositorySaldoConta->store(data: $novoSaldo);
+                    $novoSaldo = $this->saldoContaRepository->store(data: $novoSaldo);
                 }
             } else {
                 $novoSaldo['valor'] = $saldoMoeda->valor - $request->valor;
-                $novoSaldo = $this->repositorySaldoConta->update(data: $novoSaldo);
+                $novoSaldo = $this->saldoContaRepository->update(data: $novoSaldo);
             }
 
-            $transacao = $this->repositoryTransacao->store($request->all(), 'saque');
+            $transacao = $this->transacaoRepository->store($request->all(), 'saque');
 
             $responseData = $this->respostaTransacao(
                 $transacao,

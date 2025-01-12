@@ -32,7 +32,6 @@ class CriaContaRequest extends FormRequest
         return [
             'nome_titular.required' => 'O campo nome do titular é obrigatório',
             'nome_titular.alpha' => 'O campo nome do titular deve conter apenas letras',
-            'nome_titular.ascii' => 'O campo nome do titular deve conter apenas caracteres ASCII',
             'nome_titular.regex' => 'O campo nome do titular deve conter apenas letras',
             'cpf.required' => 'O campo CPF é obrigatório',
             'cpf.size' => 'O campo CPF deve conter 11 caracteres',

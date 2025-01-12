@@ -5,8 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\CriaContaRequest;
 use Illuminate\Http\Request;
 
-use App\Repositories\ContaRepository;
-use App\Repositories\RepositoryInterface;
+use App\Repositories\ContaRepositoryInterface;
 
 class ContaController extends Controller
 {
@@ -14,7 +13,7 @@ class ContaController extends Controller
 
     public function __construct()
     {
-        $this->repository = app(RepositoryInterface::class . '.conta');
+        $this->repository = app(ContaRepositoryInterface::class);
     }
 
     public function index()
@@ -31,7 +30,18 @@ class ContaController extends Controller
     {
         try {
             $conta = $this->repository->store($request->all());
-            return response()->json($conta, 201);
+
+            $response = [
+                'mensagem' => 'Conta criada com sucesso',
+                'dados' => [
+                    'id' => $conta->id,
+                    'nome_titular' => $conta->nome_titular,
+                    'cpf' => $conta->cpf,
+                    'data' => $conta->created_at,
+                ],
+            ];
+
+            return response()->json($response, 201);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 400);
         }

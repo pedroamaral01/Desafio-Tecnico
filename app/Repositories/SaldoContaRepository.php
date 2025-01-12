@@ -4,7 +4,7 @@ namespace App\Repositories;
 
 use App\Models\SaldoConta;
 
-class SaldoContaRepository implements RepositoryInterface
+class SaldoContaRepository implements SaldoContaRepositoryInterface
 {
     protected $model;
 

@@ -7,7 +7,6 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 use App\Models\Conta;
-use App\Models\Saldo;
 
 # sail artisan test --filter=OperacaoBancariaControllerTest
 class OperacaoBancariaControllerTest extends TestCase
@@ -17,14 +16,26 @@ class OperacaoBancariaControllerTest extends TestCase
     # sail artisan test --filter=OperacaoBancariaControllerTest::test_saldo_retorna_saldo_de_conta
     public function test_saldo_retorna_saldo_de_conta(): void
     {
-        // Cria uma conta no banco de dados
+        // Cria uma conta no banco de dados com saldo inicial
         $conta = Conta::factory()->create();
+        SaldoConta::create([
+            'contas_id' => $conta->id,
+            'moeda' => 'USD',
+            'valor' => 100.00,
+        ]);
 
         // Faz a requisição para o endpoint saldo
         $response = $this->getJson(route('operacao.saldo', ['contas_id' => $conta->id]));
 
         // Verifica se o status da resposta é 200 (OK)
         $response->assertStatus(200);
+
+        // Verifica se a resposta contém o saldo correto
+        $response->assertJsonFragment([
+            'contas_id' => $conta->id,
+            'moeda' => 'USD',
+            'valor' => '100.00',
+        ]);
     }
 
     # sail artisan test --filter=OperacaoBancariaControllerTest::test_deposito_realiza_deposito_com_sucesso
