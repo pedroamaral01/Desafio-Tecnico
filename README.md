@@ -5,6 +5,8 @@ Este guia descreve os passos necessários para instalar, configurar e executar o
 ## Pré-requisitos
 
 - **Docker** e **Docker Compose** instalados.
+- **PHP**
+- **Composer**
 - Cliente de banco de dados, como **DBeaver** ou outro similar.
 - Testar as rotas com **Insomnia** ou outro similar.
 
@@ -17,11 +19,14 @@ Este guia descreve os passos necessários para instalar, configurar e executar o
    cd Desafio-Tecnico
    ```
 
-### 2. Copie o conteúdo de `.env.example` e cole em `.env`:
+### 2. Renomeie o arquivo .env.example para .env:
 
-### 3. Suba o ambiente Docker usando o Laravel Sail:
+### 3. Execute o Composer e suba o ambiente Docker usando o Laravel Sail:
 
-   ```bash
+```bash
+   composer install
+   ```
+  ```bash
    ./vendor/bin/sail up
    ```
 
